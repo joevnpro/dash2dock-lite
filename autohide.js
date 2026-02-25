@@ -142,8 +142,9 @@ export let AutoHide = class {
     this._debounceCheckHide();
   }
 
+  // The dock will show back in Overview (if open Overview from a state of an opened app with fullcreen status
   show() {
-    if (!this.dock._monitor || this.dock._monitor.inFullscreen) {
+    if (!this.dock._monitor || (this.dock._monitor.inFullscreen && !this.extension._inOverview)) {
       return;
     }
     this._dwell = 0;
