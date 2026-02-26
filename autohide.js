@@ -194,9 +194,9 @@ export let AutoHide = class {
 
   _checkOverlap() {
     // Declare mode of autohide
-    let mode_allWindows = 1;
-    let mode_onlyActiveWindows = 2;
-    let mode_selected = mode_onlyActiveWindows;
+    let mode1_allWindows = 1;
+    let mode2_onlyActiveWindows = 2;
+    let mode_selected = mode2_onlyActiveWindows;
     
     // console.log("checking overlap...");
     if (this.extension._inOverview) {
@@ -245,6 +245,8 @@ export let AutoHide = class {
 
     let monitor = this.dock._monitor;
     let actors = global.get_window_actors();
+
+    // Add popumMenu to hide the dock if the right mouse menu overlap the doc (becasuse this dock is design to be always over everything)
     let popupMenus = actors
       .map(a => a.get_meta_window())
       .filter(w =>
@@ -254,18 +256,7 @@ export let AutoHide = class {
             w.get_window_type() === Meta.WindowType.MENU)
       );
 
-    let checkWindows = [];
-
-    /*
-      I don't know why _checkOverlap2 can hide the dock when Windows/Right-click menu/Dropdown menu is active and overlaps the dock, 
-        but if the desktop is empty (no windows), the dock inexplicably hides.
-      
-      So I had to combine _checkOverlap1 (author's code) to hide the dock with any window overlapping the dock - but it appears when the desktop is empty).
-      
-      Therefore, I combined _checkOverlap1 and _checkOverlap2. The result is that I can hide the dock only when Windows is active and overlaps the dock, while ensuring the desktop is empty (no windows) for the dock to appear. _checkOverlap2 can also hide the dock if the application's right-click menu or dropdown menu accidentally overlaps the dock - convenient for you when using a browser where, for some reason, the right-click menu opens downwards and overlaps the dock.
-    */
-    
-      // Hide the dock if any windows overlaps the dock.
+    // Hide the dock if any windows overlaps the dock.
     const _checkOverlap1 = () => {
       let windows = actors.map((a) => {
       let w = a.get_meta_window();
@@ -316,10 +307,26 @@ export let AutoHide = class {
     }
 
     // Hide the dock if only there is an overlap of active windows on the dock, however the dock is hidden if the desktop is empty (no windows)
+    let focused = global.display.get_focus_window();
+    let checkWindows = [];
+    
     const _checkOverlap2 = () => {
       if (focused && focused.get_monitor() === monitor.index) {
-          checkWindows.push(focused);
-      }
+        let winType = focused.get_window_type();
+        let isValidAppWindows = false;
+        for (let i = 0; i < actors.length; i++) {
+            let win = actors[i].get_meta_window();
+  
+            // So sánh đối tượng cửa sổ
+            if (win === focused) {
+                isValidAppWindows = true;
+                break; 
+            }
+        }
+        if (isValidAppWindows && winType !== Meta.WindowType.DESKTOP && focused.can_close()) {
+            checkWindows.push(focused);
+        }
+      }  
   
       popupMenus.forEach(w => {
           if (w.get_monitor() === monitor.index) {
@@ -329,7 +336,7 @@ export let AutoHide = class {
   
       // Lưu lại để _checkHide() biết desktop trống
       this.windows = checkWindows;
-  
+
       // Không có cửa sổ nào → không overlap
       if (checkWindows.length === 0) {
           return false;
@@ -356,30 +363,18 @@ export let AutoHide = class {
       return isOverlapped;
     }
     
-    let overlap;
-    let overlap1 = _checkOverlap1();
-    if(mode_selected === mode_allWindows) {
-      overlap = overlap1;
+    // Choose autohide mode
+    let overlap = false;
+  
+    if(mode_selected === mode1_allWindows) {
+      overlap = _checkOverlap1();
       return overlap;
     }
   
-    let overlap2 = _checkOverlap2();
-    if(overlap1 === true && overlap2 === true) {
-      overlap = true;
+    if(mode_selected === mode2_onlyActiveWindows) {
+      overlap = _checkOverlap2();
       return overlap;
     }
-    if(overlap1 === false && overlap2 === true) {
-      overlap = false;
-      return overlap;
-    }
-      if(overlap1 === false && overlap2 === false) {
-      overlap = false;
-      return overlap;
-    }
-      if(overlap1 === true && overlap2 === false) {
-      overlap = false;
-      return overlap;
-    } 
   
     return overlap;   
   }
