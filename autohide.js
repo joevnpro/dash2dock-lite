@@ -306,7 +306,7 @@ export let AutoHide = class {
       return isOverlapped;
     }
 
-    // Hide the dock if only there is an overlap of active windows on the dock, however the dock is hidden if the desktop is empty (no windows)
+    // Hide the dock if only there is an overlap of active windows on the dock,
     let focused = global.display.get_focus_window();
     let checkWindows = [];
     
@@ -334,10 +334,7 @@ export let AutoHide = class {
           }
       });
   
-      // Lưu lại để _checkHide() biết desktop trống
       this.windows = checkWindows;
-
-      // Không có cửa sổ nào → không overlap
       if (checkWindows.length === 0) {
           return false;
       }
@@ -363,7 +360,6 @@ export let AutoHide = class {
       return isOverlapped;
     }
     
-    // Choose autohide mode
     let overlap = false;
   
     if(mode_selected === mode1_allWindows) {
